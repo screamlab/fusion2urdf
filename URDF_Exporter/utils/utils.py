@@ -17,6 +17,7 @@ import sys
 def copy_occs(root):    
     """    
     duplicate all the components
+    Original components keep their names, copied components are prefixed with 'exported_'
     """    
     def copy_body(allOccs, occs):
         """    
@@ -27,35 +28,59 @@ def copy_occs(root):
         transform = adsk.core.Matrix3D.create()
         
         # Create new components from occs
-        # This support even when a component has some occses. 
-
         new_occs = allOccs.addNewComponent(transform)  # this create new occs
-        if occs.component.name == 'base_link':
-            occs.component.name = 'old_component'
-            new_occs.component.name = 'base_link'
+        # Name the copied component with 'exported_' prefix
+        # Use the component name for base_link to avoid base_link_1 STL naming
+        occs_name = re.sub('[ :()]', '_', occs.name)
+        component_name = re.sub('[ :()]', '_', occs.component.name)
+        if component_name == 'base_link':
+            new_occs.component.name = 'exported_base_link'
         else:
-            new_occs.component.name = re.sub('[ :()]', '_', occs.name)
+            new_occs.component.name = 'exported_' + occs_name
         new_occs = allOccs.item((allOccs.count-1))
+        
         for i in range(bodies.count):
             body = bodies.item(i)
             body.copyToComponent(new_occs)
     
     allOccs = root.occurrences
-    oldOccs = []
-    coppy_list = [occs for occs in allOccs]
-    for occs in coppy_list:
+    copy_list = [allOccs.item(i) for i in range(allOccs.count)]
+    
+    # Copy bodies from original components (keep original names)
+    for occs in copy_list:
         if occs.bRepBodies.count > 0:
             copy_body(allOccs, occs)
-            oldOccs.append(occs)
 
-    for occs in oldOccs:
-        occs.component.name = 'old_component'
+
+def cleanup_copied_components(root):
+    """
+    Remove all copied components that were created during STL export
+    Keep only the original components (those without 'exported_' prefix)
+    """
+    allOccs = root.occurrences
+    components_to_remove = []
+    
+    # Collect all occurrences and identify which ones are copied
+    occs_list = [allOccs.item(i) for i in range(allOccs.count)]
+    
+    for occs in occs_list:
+        comp_name = occs.component.name
+        # Remove components with 'exported_' prefix (these are the copies)
+        if comp_name.startswith('exported_'):
+            components_to_remove.append(occs)
+    
+    # Remove copied components in reverse order to avoid index issues
+    for occs in reversed(components_to_remove):
+        try:
+            occs.deleteMe()
+        except Exception as e:
+            print(f"Failed to remove component {occs.component.name}: {str(e)}")
 
 
 def export_stl(design, save_dir, components):  
     """
-    export stl files into "sace_dir/"
-    
+    export stl files into "save_dir/"
+    Export only from copied components (those with 'exported_' prefix)
     
     Parameters
     ----------
@@ -75,10 +100,13 @@ def export_stl(design, save_dir, components):
     for component in components:
         allOccus = component.allOccurrences
         for occ in allOccus:
-            if 'old_component' not in occ.component.name:
+            # Only export copied components (those with 'exported_' prefix)
+            if occ.component.name.startswith('exported_'):
                 try:
-                    print(occ.component.name)
-                    fileName = scriptDir + "/" + occ.component.name              
+                    # Remove the 'exported_' prefix when saving STL filename
+                    stl_name = occ.component.name.replace('exported_', '')
+                    print(stl_name)
+                    fileName = scriptDir + "/" + stl_name              
                     # create stl exportOptions
                     stlExportOptions = exportMgr.createSTLExportOptions(occ, fileName)
                     stlExportOptions.sendToPrintUtility = False
@@ -87,7 +115,7 @@ def export_stl(design, save_dir, components):
                     stlExportOptions.meshRefinement = adsk.fusion.MeshRefinementSettings.MeshRefinementLow
                     exportMgr.execute(stlExportOptions)
                 except:
-                    print('Component ' + occ.component.name + 'has something wrong.')
+                    print('Component ' + occ.component.name + ' has something wrong.')
                 
 
 def file_dialog(ui):     

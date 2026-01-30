@@ -119,8 +119,10 @@ def write_gazebo_endtag(file_name):
         
 
 def write_urdf(joints_dict, links_xyz_dict, inertial_dict, package_name, robot_name, save_dir):
-    try: os.mkdir(save_dir + '/urdf')
-    except: pass 
+    try:
+        os.makedirs(save_dir + '/urdf', exist_ok=True)
+    except:
+        pass
 
     file_name = save_dir + '/urdf/' + robot_name + '.xacro'  # the name of urdf file
     repo = package_name + '/meshes/'  # the repository of binary stl files
@@ -140,8 +142,10 @@ def write_urdf(joints_dict, links_xyz_dict, inertial_dict, package_name, robot_n
     write_gazebo_endtag(file_name)
 
 def write_materials_xacro(joints_dict, links_xyz_dict, inertial_dict, package_name, robot_name, save_dir):
-    try: os.mkdir(save_dir + '/urdf')
-    except: pass  
+    try:
+        os.makedirs(save_dir + '/urdf', exist_ok=True)
+    except:
+        pass
 
     file_name = save_dir + '/urdf/materials.xacro'  # the name of urdf file
     with open(file_name, mode='w') as f:
@@ -206,8 +210,10 @@ to swap component1<=>component2"
         f.write('</robot>\n')
 
 def write_gazebo_xacro(joints_dict, links_xyz_dict, inertial_dict, package_name, robot_name, save_dir):
-    try: os.mkdir(save_dir + '/urdf')
-    except: pass  
+    try:
+        os.makedirs(save_dir + '/urdf', exist_ok=True)
+    except:
+        pass
 
     file_name = save_dir + '/urdf/' + robot_name + '.gazebo'  # the name of urdf file
     repo = robot_name + '/meshes/'  # the repository of binary stl files
@@ -260,8 +266,10 @@ def write_display_launch(package_name, robot_name, save_dir):
     save_dir: str
     path of the repository to save
     """   
-    try: os.mkdir(save_dir + '/launch')
-    except: pass     
+    try:
+        os.makedirs(save_dir + '/launch', exist_ok=True)
+    except:
+        pass
 
     launch = Element('launch')     
 
@@ -308,8 +316,10 @@ def write_gazebo_launch(package_name, robot_name, save_dir):
         path of the repository to save
     """
     
-    try: os.mkdir(save_dir + '/launch')
-    except: pass     
+    try:
+        os.makedirs(save_dir + '/launch', exist_ok=True)
+    except:
+        pass
     
     launch = Element('launch')
     param = SubElement(launch, 'param')
@@ -357,8 +367,10 @@ def write_control_launch(package_name, robot_name, save_dir, joints_dict):
         information of the joints
     """
     
-    try: os.mkdir(save_dir + '/launch')
-    except: pass     
+    try:
+        os.makedirs(save_dir + '/launch', exist_ok=True)
+    except:
+        pass
     
     #launch = Element('launch')
 

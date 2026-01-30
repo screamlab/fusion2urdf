@@ -5,6 +5,15 @@ This repo only supports Gazebo, if you are using pybullet, see: https://github.c
 
 
 ## Updated!!!
+* 2026/01/27: Fix export directory creation
+  * Automatically creates the full output directory path to avoid first-run FileNotFoundError
+  * Avoids duplicating the {robot_name}_description folder when the user selects it directly
+
+* 2026/01/26: Added Automatic Cleanup Feature
+  * Added automatic cleanup of copied components to prevent leaving unnecessary parts in the original Fusion file
+  * Users can choose whether to automatically clean up copied components after URDF generation  
+  * Added standalone cleanup tool script for manually cleaning existing copied components
+
 * 2021/01/09: Fix xyz calculation. 
   * If you see that your components move arround the map center in rviz try this update 
   * More Infos see: https://forums.autodesk.com/t5/fusion-360-api-and-scripts/difference-of-geometryororiginone-and-geometryororiginonetwo/m-p/9837767
@@ -28,13 +37,50 @@ This repo only supports Gazebo, if you are using pybullet, see: https://github.c
 
 ## Installation
 
+### Method 1: Cross-platform Python installer (recommended)
+
+```bash
+cd <path to fusion2urdf>
+python install.py
+```
+
+Use `python install.py --force` to overwrite an existing installation without prompting.
+
+### Method 2: Automatic install scripts (platform-specific)
+
+#### Windows PowerShell (recommended)
+```powershell
+cd <path to fusion2urdf>
+.\install.ps1
+```
+
+#### Windows Batch file
+```batch
+cd <path to fusion2urdf>
+install.bat
+```
+
+### Method 3: Manual installation
+
 Run the following command in your shell.
 
 ##### Windows (In PowerShell)
 
 ```powershell
 cd <path to fusion2urdf>
+
+# Automatically check and remove the old version, then install the new version
+$destination = "${env:APPDATA}\Autodesk\Autodesk Fusion 360\API\Scripts\URDF_Exporter"
+if (Test-Path $destination) {
+  Write-Host "Detected an existing URDF_Exporter. Removing..." -ForegroundColor Yellow
+    Remove-Item -Path $destination -Recurse -Force
+  Write-Host "Previous version removed" -ForegroundColor Green
+}
 Copy-Item ".\URDF_Exporter\" -Destination "${env:APPDATA}\Autodesk\Autodesk Fusion 360\API\Scripts\" -Recurse
+Write-Host "URDF_Exporter installation complete!" -ForegroundColor Green
+
+# One-line version (copy/paste friendly):
+# if (Test-Path "${env:APPDATA}\Autodesk\Autodesk Fusion 360\API\Scripts\URDF_Exporter") { Remove-Item -Path "${env:APPDATA}\Autodesk\Autodesk Fusion 360\API\Scripts\URDF_Exporter" -Recurse -Force }; Copy-Item ".\URDF_Exporter\" -Destination "${env:APPDATA}\Autodesk\Autodesk Fusion 360\API\Scripts\" -Recurse; Write-Host "URDF_Exporter installation complete!" -ForegroundColor Green
 ```
 
 ##### macOS (In bash or zsh)
@@ -211,3 +257,21 @@ roslaunch (whatever your robot_name is)_description gazebo.launch
     howpublished = {\url{https://github.com/syuntoku14/fusion2urdf}}
 }
 ```
+
+## Automatic Cleanup Feature
+
+**Problem Description:**
+When generating URDF files with fusion2urdf, the script creates duplicate components in the original Fusion 360 file to export STL files. These duplicated components often remain after export, cluttering the original file.
+
+**Solution:**
+fusion2urdf now provides an automatic cleanup option that removes duplicated components after URDF generation to keep the original file tidy.
+
+**How to Use:**
+1. When running the URDF_Exporter script, you will be asked whether to automatically clean up copied components.
+2. Choose "YES" to clean up automatically (recommended), or "NO" to keep the copied components.
+3. To manually clean existing copied components, run `cleanup_components.py`.
+
+**Notes:**
+- The cleanup removes components whose names include certain keywords (e.g., 'copy', 'temp_', 'duplicate').
+- It restores original component names that were renamed to 'old_component'.
+- Cleanup includes error handling; failures do not affect URDF generation.

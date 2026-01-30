@@ -46,9 +46,24 @@ def run(context):
             ui.messageBox('Fusion2URDF was canceled', title)
             return 0
         
-        save_dir = save_dir + '/' + package_name
-        try: os.mkdir(save_dir)
-        except: pass     
+        # Ask user if they want to clean up copied components
+        cleanup_result = ui.messageBox(
+            'Do you want to automatically clean up copied components after URDF generation?\n\n'
+            'YES: Clean up (recommended) - removes temporary components created during export\n'
+            'NO: Keep components - temporary components will remain in your Fusion file',
+            title,
+            adsk.core.MessageBoxButtonTypes.YesNoButtonType,
+            adsk.core.MessageBoxIconTypes.QuestionIconType
+        )
+        cleanup_components = (cleanup_result == adsk.core.DialogResults.DialogYes)
+        
+        # If user selected an existing package folder, do not append again
+        if os.path.basename(save_dir) != package_name:
+            save_dir = save_dir + '/' + package_name
+        try:
+            os.makedirs(save_dir, exist_ok=True)
+        except:
+            pass
 
         package_dir = os.path.abspath(os.path.dirname(__file__)) + '/package/'
         
@@ -92,6 +107,16 @@ def run(context):
         # Generate STl files        
         utils.copy_occs(root)
         utils.export_stl(design, save_dir, components)   
+        
+        # Clean up copied components if user requested it
+        if cleanup_components:
+            try:
+                utils.cleanup_copied_components(root)
+                msg += '\nCopied components cleaned up successfully.'
+            except Exception as cleanup_error:
+                msg += f'\nWarning: Failed to clean up copied components: {str(cleanup_error)}'
+        else:
+            msg += '\nNote: Copied components were not cleaned up as requested.'
         
         ui.messageBox(msg, title)
         
